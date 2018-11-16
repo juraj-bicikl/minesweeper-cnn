@@ -15,12 +15,26 @@ class GameCore(ABC):
 
     @abstractmethod
     def get_board(self):
-        """ Returns a 2D np.ndarray of np.int32 representing the current state of the game.
+        """ Returns a 2D np.ndarray of np.int8 representing the current state of the game.
 
-            Codes:
+            Encoding:
                 explored fields: -1, 0, 1, ..., 8 (-1: mine, while others denote number of mines in neighbourhood)
 
                 unexplored fields: 9, 10, ..., 18 (9: mine, while others denote number of mines in neighbourhood + 10)
+
+            Users should NOT modify the array on their own. The array is (indirectly) modified only by calling
+            'press_button'.
+        """
+        ...
+
+    @abstractmethod
+    def get_visible_board(self):
+        """ Returns a 2D np.ndarray of np.int8 representing the visible part of the current state of the game.
+
+            Encoding:
+                explored fields: 0, 1, ..., 8 (number of mines in the neighbourhood)
+
+                unexplored fields: -1
 
             Users should NOT modify the array on their own. The array is (indirectly) modified only by calling
             'press_button'.
@@ -44,13 +58,40 @@ class GameCore(ABC):
 
     @abstractmethod
     def press_button(self, i, j):
-        """ Press button at position (i, j)
+        """ Press button at position (i, j).
 
             Args:
-                i: vertical position (from top down)  (int)
-                j: horizontal position (from left to right)  (int)
+                i (int): vertical position (from top down)
+                j (int): horizontal position (from left to right)
+
+            Returns:
+                status (int)
         """
         ...
+
+    @abstractmethod
+    def get_unexplored_safe_fields(self):
+        """ Returns a set of coordinates of unexplored 'safe' fields.
+            The method is useful for generating training data for the neural network.
+
+        """
+        ...
+
+
+def full_to_visible_board(board):
+    """ Converts board (encoding described in GameCore) to neural network input encoding
+
+        NN input encoding:
+            -2              padded field
+            -1              unexplored field
+            0, 1, ..., 8    explored field (num of neighbouring mines)
+
+        Returns:
+            2d np.ndarray (dtype = np.int8)
+    """
+    output = board.copy()
+    output[board > 8] = -1  # unexplored fields are marked '-1'
+    return output
 
 
 class GameCoreV1(GameCore):
@@ -82,6 +123,9 @@ class GameCoreV1(GameCore):
     def get_board(self):
         return self.board
 
+    def get_visible_board(self):
+        return full_to_visible_board(self.board)
+
     def get_height(self):
         return self.height
 
@@ -90,6 +134,9 @@ class GameCoreV1(GameCore):
 
     def get_num_mines(self):
         return self.num_mines
+
+    def get_unexplored_safe_fields(self):
+        return self.unexplored_safe_fields
 
     def press_button(self, i, j):
         if self.board[i, j] >= 9:
@@ -103,11 +150,12 @@ class GameCoreV1(GameCore):
                     self.status = 1
 
             # pressing neighbouring buttons if the current field has no surrounding mines
-            if self.board[i, j] == 0:
+            if self.board[i, j] == 0 and self.status == 0:
                 for kk in range(i-1, i+2):
                     for ll in range(j-1, j+2):
                         if (kk >= 0) and (kk < self.height) and (ll >= 0) and (ll < self.width):
                             self.press_button(kk, ll)
+        return self.status
 
     def __produce_set_of_unexplored_safe_fields(self):
         s = set()
@@ -128,7 +176,7 @@ class GameCoreV1(GameCore):
                 board (np.ndarray)
         """
         height, width = mine_field.shape
-        board = np.empty(shape=mine_field.shape, dtype=np.int32)
+        board = np.empty(shape=mine_field.shape, dtype=np.int8)
         for i in range(height):
             h_start = max(0, i-1)
             h_end = min(height, i+2)
@@ -147,13 +195,13 @@ class GameCoreV1(GameCore):
         rand_gen = np.random.RandomState(seed)
 
         if fixed_num_mines:
-            num_mines = int(mine_fraction * height * width)
-            random_mine_field = np.zeros(shape=[height * width], dtype=np.int32)
+            num_mines = round(mine_fraction * height * width)
+            random_mine_field = np.zeros(shape=[height * width], dtype=np.int8)
             for i in range(num_mines):
                 random_mine_field[i] = 1
             random_mine_field = rand_gen.permutation(random_mine_field).reshape([height, width])
         else:
-            random_mine_field = (rand_gen.rand(height, width) < mine_fraction).astype(np.int32)
+            random_mine_field = (rand_gen.rand(height, width) < mine_fraction).astype(np.int8)
 
         board = GameCoreV1.mine_field_to_board(random_mine_field)
         return GameCoreV1(board)
