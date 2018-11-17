@@ -33,7 +33,9 @@ class TfTrainer:
         else:
             self.model_runner.init()
 
-        self.writer = tf.summary.FileWriter(self.tensorboard_dir, graph=self.graph.graph)
+        if self.tensorboard_dir:
+            self.writer = tf.summary.FileWriter(self.tensorboard_dir, graph=self.graph.graph)
+
         validation_tgt, validation_ins = self.validation_data.all_rows()
 
         step = 0
@@ -50,11 +52,13 @@ class TfTrainer:
                 train_time += (t2 - t1)
                 step += 1
 
-            summary = self.model_runner.run_inference(self.graph.summary, {self.graph.input: validation_ins, self.graph.target: validation_tgt})
-            self.writer.add_summary(summary, global_step=step)
+            if self.writer:
+                summary = self.model_runner.run_inference(self.graph.summary, {self.graph.input: validation_ins, self.graph.target: validation_tgt})
+                self.writer.add_summary(summary, global_step=step)
             print("interval %d done, data time: %.2f s, train time: %.2f s" % (i + 1, data_time, train_time))
 
-        self.writer.close()
+        if self.writer:
+            self.writer.close()
         self.model_runner.end_session(save=True)
 
 
@@ -89,7 +93,9 @@ class TfTrainerWithRefreshingData:
         else:
             self.model_runner.init()
 
-        self.writer = tf.summary.FileWriter(self.tensorboard_dir, graph=self.graph.graph)
+        if self.tensorboard_dir:
+            self.writer = tf.summary.FileWriter(self.tensorboard_dir, graph=self.graph.graph)
+
         validation_tgt, validation_ins = self.validation_data.all_rows()
 
         step = 0
@@ -110,10 +116,12 @@ class TfTrainerWithRefreshingData:
                 step += 1
 
             t0 = time.time()
-            summary = self.model_runner.run_inference(self.graph.summary, {self.graph.input: validation_ins, self.graph.target: validation_tgt})
+            if self.tensorboard_dir:
+                summary = self.model_runner.run_inference(self.graph.summary, {self.graph.input: validation_ins, self.graph.target: validation_tgt})
+                self.writer.add_summary(summary, global_step=step)
             summary_time = time.time() - t0
-            self.writer.add_summary(summary, global_step=step)
             print("interval %d done, data time: %.2f s, train time: %.2f s, summary time: %.2f" % (i + 1, data_time, train_time, summary_time))
 
-        self.writer.close()
+        if self.writer:
+            self.writer.close()
         self.model_runner.end_session(save=True)

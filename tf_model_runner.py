@@ -10,13 +10,15 @@ class TfModelRunner:
                  graph: TfGraph,
                  saved_model_path: str,
                  extra_train_inputs: {} = {},
-                 extra_inference_inputs: {} = {}):
+                 extra_inference_inputs: {} = {},
+                 session_config: tf.ConfigProto = None):
 
         self.graph = graph
         self.saved_model_path = saved_model_path
         self.extra_train_inputs = extra_train_inputs
         self.extra_inference_inputs = extra_inference_inputs
         self.session = None
+        self.session_config = session_config if session_config else tf.ConfigProto()
 
     def __run(self, fetches, feed_dict=None, options=None, run_metadata=None):
         assert self.session, "session is not active"
@@ -49,7 +51,7 @@ class TfModelRunner:
 
     def start_session(self):
         if not self.session:
-            self.session = tf.Session(graph=self.graph.graph)
+            self.session = tf.Session(graph=self.graph.graph, config=self.session_config)
 
     def end_session(self, save=False):
         if self.session:

@@ -1,6 +1,6 @@
 import numpy as np
 import tensorflow as tf
-from data_generator import generate_multi_game_data, SimpleMinesweeperData
+from data_generator import generate_multi_game_data, SimpleMinesweeperData, SimpleGameDataGenerator
 from tf_model_runner import TfModelRunner
 from tf_model_trainer import TfTrainer, TfTrainerWithRefreshingData
 from simple_cnn import SimpleCnn
@@ -14,11 +14,13 @@ def example_1():
     width = 16
     mine_fraction = 40.0 / (16 * 16)
 
+    single_game_generator = SimpleGameDataGenerator(snapshot_step=4)
+
     def learn_data_generator():
-        tgt, ins = generate_multi_game_data(10000, height, width, mine_fraction, snapshot_step=4, seed=np.random.randint(int(1e9)))
+        tgt, ins = generate_multi_game_data(10000, height, width, mine_fraction, single_game_generator, seed=np.random.randint(int(1e9)))
         return SimpleMinesweeperData(tgt, ins, 1)
 
-    tgt_val, ins_val = generate_multi_game_data(400, height, width, mine_fraction, snapshot_step=4, seed=111)
+    tgt_val, ins_val = generate_multi_game_data(400, height, width, mine_fraction, single_game_generator, seed=111)
     validation_data = SimpleMinesweeperData(tgt_val, ins_val, 2)
 
     graph_builder = SimpleCnn(height, width, num_hidden_layers=12, num_hidden_channels=16, kernel_width=5,
