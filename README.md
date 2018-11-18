@@ -39,7 +39,7 @@ For an example of a script used for training a model take a look at *training_ex
 
 ### AI performance
 
-The AI currently used to assist in playing the game wins around 58% of time. The underlying model is a 13 layers
+The AI currently used to assist in playing the game wins around 62% of games. The underlying model is a 13 layers
 deep conolutional network.
 
 ### Todo list
