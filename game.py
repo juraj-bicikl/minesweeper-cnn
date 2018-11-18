@@ -16,7 +16,7 @@ def run_game():
     graph_builder = SimpleCnn(height, width, num_hidden_layers=12, num_hidden_channels=16, kernel_width=5,
                               l2_penalty=1e-5, optimizer=tf.train.AdamOptimizer(learning_rate=5e-4),
                               include_layer_norm=True, seed=333)
-    saved_model_path = "example-models/run-02"
+    saved_model_path = "example-models/test-03"
     model_runner = TfModelRunner(graph_builder.build(), saved_model_path)
 
     game_core = GameCoreV1.initialize_game(height, width, mine_fraction, seed=np.random.randint(int(1e9)))
