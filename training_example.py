@@ -4,7 +4,7 @@ from data_generator import generate_multi_game_data, SimpleMinesweeperData, Simp
 from tf_model_runner import TfModelRunner
 from tf_model_trainer import TfTrainer, TfTrainerWithRefreshingData
 from simple_cnn import SimpleCnn
-from ai_player import TensorflowPlayer
+from ai_player import TensorflowPlayer, TensorflowPlayerFast
 from game_core import GameCoreV1
 
 
@@ -35,7 +35,8 @@ def example_1():
     model_trainer.train(model_path=None)
 
     # playing games ...
-    ai_player = TensorflowPlayer(model_runner).turn_on()
+    model_runner_cpu = TfModelRunner(graph_builder.build(), saved_model_path, session_config=tf.ConfigProto(device_count={'GPU': 0}))
+    ai_player = TensorflowPlayerFast(model_runner_cpu).turn_on()
     rand_gen = np.random.RandomState(222)
     n_games = 1000
     n_won = 0
